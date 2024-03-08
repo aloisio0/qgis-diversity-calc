@@ -25,6 +25,8 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsProject
+
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
@@ -188,6 +190,27 @@ class DiversityCalc:
         if self.first_start == True:
             self.first_start = False
             self.dlg = DiversityCalcDialog()
+
+            self.dlg.mcbPoly.setLayer(QgsProject.instance().mapLayersByName("Linear Buffer")[0])
+            # Deixando selecionado um layer específico
+
+            self.dlg.mcbPoly.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+            # Definindo os filtros para selecionar apenas os Layers de polígono
+            self.dlg.mcbPoint.setFilters(QgsMapLayerProxyModel.PointLayer)
+            # Definindo os filtros para selecionar apenas os Layers de pontos
+
+            self.dlg.fcbCategory.setFilters(QgsFieldProxyModel.String)
+            # Definindo os filtros para selecionar apenas os Fields string
+            self.dlg.fcbSpecies.setFilters(QgsFieldProxyModel.String)
+            # Definindo os filtros para selecionar apenas os Fields string
+
+            self.dlg.fcbCategory.setLayer(self.dlg.mcbPoly.currentLayer())
+            # Definindo o Layer do fcbCategory como sendo o Layer selecionado pelo mcbPoly
+            self.dlg.fcbSpecies.setLayer(self.dlg.mcbPoint.currentLayer())
+            # Definindo o Layer do fcbSpecies como sendo o Layer selecionado pelo mcbPoint
+
+
+
 
         # show the dialog
         self.dlg.show()
