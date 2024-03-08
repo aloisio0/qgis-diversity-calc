@@ -23,14 +23,15 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
 
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsProject
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsProject, QgsMessageLog, Qgis
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .diversity_calc_dialog import DiversityCalcDialog
+from .diversity_functions import *
 import os.path
 
 
@@ -191,9 +192,6 @@ class DiversityCalc:
             self.first_start = False
             self.dlg = DiversityCalcDialog()
 
-            self.dlg.mcbPoly.setLayer(QgsProject.instance().mapLayersByName("Linear Buffer")[0])
-            # Deixando selecionado um layer específico
-
             self.dlg.mcbPoly.setFilters(QgsMapLayerProxyModel.PolygonLayer)
             # Definindo os filtros para selecionar apenas os Layers de polígono
             self.dlg.mcbPoint.setFilters(QgsMapLayerProxyModel.PointLayer)
@@ -217,7 +215,21 @@ class DiversityCalc:
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
+
         if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+            # Get required input parameters from the dialog
+            lyrPoly = self.dlg.mcbPoly.currentLayer()  # Armazenando o layer poligonal informado pelo usuário
+            lyrPoint = self.dlg.mcbPoint.currentLayer()  # Armazenando o layer de pontos informado pelo usuário
+
+            fldCategory = self.dlg.fcbCategory.currentField()  # Armazenando o field de categoria informado pelo usuário
+            fldSpecies = self.dlg.fcbSpecies.currentField()  # Armazenando o field de Espécies informado pelo usuário
+            dctMain = {}
+            for poly in lyrPoly.getFeatures():
+                sCategory = poly.attribute(fldCategory)
+                QgsMessageLog.logMessage("Category: {}".format(sCategory), "Diversity Calculator", level=Qgis.Info)
+                dctSummary = dc_summarizePoly(poly, lyrPoint, fldSpecies)
+                QgsMessageLog.logMessage("Summary: {}".format(dctSummary), "Diversity Calculator", level=Qgis.Info)
+                dctMain = dc_mergeDictionaries(dctMain, sCategory, dctSummary)
+
+            QMessageBox.information(self.dlg, "Summary", dc_resultString(dctMain))
+                
